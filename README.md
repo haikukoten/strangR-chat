@@ -22,7 +22,7 @@ Run the app as it is.
 Deploy the app with the command "flutter run"
 
 ## Screenshot
-<img src = "https://github.com/anapeksha/strangR-chat/blob/master/screenshot/screenshot1.png" height="50%" width="50%">
+<img src = "https://github.com/anapeksha/strangR-chat/blob/master/screenshot/screenshot1.png" height="30%" width="30%">
 
 
 ## The App
