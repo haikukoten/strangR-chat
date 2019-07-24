@@ -13,11 +13,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'StrangR',
+      title: 'Chat Demo',
       theme: ThemeData(
         primaryColor: themeColor,
       ),
-      home: LoginScreen(title: 'LOGIN'),
+      home: LoginScreen(title: 'CHAT DEMO'),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -91,13 +91,10 @@ class LoginScreenState extends State<LoginScreen> {
       final List<DocumentSnapshot> documents = result.documents;
       if (documents.length == 0) {
         // Update data to server if new user
-        Firestore.instance.collection('users').document(firebaseUser.uid).setData({
-          'nickname': firebaseUser.displayName,
-          'photoUrl': firebaseUser.photoUrl,
-          'id': firebaseUser.uid,
-          'createdAt': DateTime.now().millisecondsSinceEpoch.toString(),
-          'chattingWith': null
-        });
+        Firestore.instance
+            .collection('users')
+            .document(firebaseUser.uid)
+            .setData({'nickname': firebaseUser.displayName, 'photoUrl': firebaseUser.photoUrl, 'id': firebaseUser.uid});
 
         // Write data to local
         currentUser = firebaseUser;
@@ -116,7 +113,13 @@ class LoginScreenState extends State<LoginScreen> {
         isLoading = false;
       });
 
-      Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen(currentUserId: firebaseUser.uid)));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => MainScreen(
+                  currentUserId: firebaseUser.uid,
+                )),
+      );
     } else {
       Fluttertoast.showToast(msg: "Sign in fail");
       this.setState(() {

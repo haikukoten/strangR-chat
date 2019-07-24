@@ -1,18 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_demo/chat.dart';
 import 'package:flutter_chat_demo/const.dart';
 import 'package:flutter_chat_demo/login.dart';
 import 'package:flutter_chat_demo/settings.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 void main() => runApp(MyApp());
@@ -30,78 +26,12 @@ class MainScreenState extends State<MainScreen> {
   MainScreenState({Key key, @required this.currentUserId});
 
   final String currentUserId;
-  final FirebaseMessaging firebaseMessaging = new FirebaseMessaging();
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
-  final GoogleSignIn googleSignIn = GoogleSignIn();
 
   bool isLoading = false;
   List<Choice> choices = const <Choice>[
     const Choice(title: 'Settings', icon: Icons.settings),
     const Choice(title: 'Log out', icon: Icons.exit_to_app),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    registerNotification();
-    configLocalNotification();
-  }
-
-  void registerNotification() {
-    firebaseMessaging.requestNotificationPermissions();
-
-    firebaseMessaging.configure(onMessage: (Map<String, dynamic> message) {
-      print('onMessage: $message');
-      showNotification(message['notification']);
-      return;
-    }, onResume: (Map<String, dynamic> message) {
-      print('onResume: $message');
-      return;
-    }, onLaunch: (Map<String, dynamic> message) {
-      print('onLaunch: $message');
-      return;
-    });
-
-    firebaseMessaging.getToken().then((token) {
-      print('token: $token');
-      Firestore.instance.collection('users').document(currentUserId).updateData({'pushToken': token});
-    }).catchError((err) {
-      Fluttertoast.showToast(msg: err.message.toString());
-    });
-  }
-
-  void configLocalNotification() {
-    var initializationSettingsAndroid = new AndroidInitializationSettings('app_icon');
-    var initializationSettingsIOS = new IOSInitializationSettings();
-    var initializationSettings = new InitializationSettings(initializationSettingsAndroid, initializationSettingsIOS);
-    flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  }
-
-  void onItemMenuPress(Choice choice) {
-    if (choice.title == 'Log out') {
-      handleSignOut();
-    } else {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => Settings()));
-    }
-  }
-
-  void showNotification(message) async {
-    var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
-      Platform.isAndroid ? 'com.dfa.flutterchatdemo': 'com.duytq.flutterchatdemo',
-      'Flutter chat demo',
-      'your channel description',
-      playSound: true,
-      enableVibration: true,
-      importance: Importance.Max,
-      priority: Priority.High,
-    );
-    var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
-    var platformChannelSpecifics =
-        new NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
-    await flutterLocalNotificationsPlugin.show(
-        0, message['title'].toString(), message['body'].toString(), platformChannelSpecifics,
-        payload: json.encode(message));
-  }
 
   Future<bool> onBackPress() {
     openDialog();
@@ -135,7 +65,7 @@ class MainScreenState extends State<MainScreen> {
                       style: TextStyle(color: Colors.white, fontSize: 18.0, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'Are you sure you want to exit app?',
+                      'Are you sure to exit app?',
                       style: TextStyle(color: Colors.white70, fontSize: 14.0),
                     ),
                   ],
@@ -190,102 +120,6 @@ class MainScreenState extends State<MainScreen> {
         exit(0);
         break;
     }
-  }
-
-  Future<Null> handleSignOut() async {
-    this.setState(() {
-      isLoading = true;
-    });
-
-    await FirebaseAuth.instance.signOut();
-    await googleSignIn.disconnect();
-    await googleSignIn.signOut();
-
-    this.setState(() {
-      isLoading = false;
-    });
-
-    Navigator.of(context)
-        .pushAndRemoveUntil(MaterialPageRoute(builder: (context) => MyApp()), (Route<dynamic> route) => false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'CONTACTS',
-          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: <Widget>[
-          PopupMenuButton<Choice>(
-            onSelected: onItemMenuPress,
-            itemBuilder: (BuildContext context) {
-              return choices.map((Choice choice) {
-                return PopupMenuItem<Choice>(
-                    value: choice,
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
-                          choice.icon,
-                          color: primaryColor,
-                        ),
-                        Container(
-                          width: 10.0,
-                        ),
-                        Text(
-                          choice.title,
-                          style: TextStyle(color: primaryColor),
-                        ),
-                      ],
-                    ));
-              }).toList();
-            },
-          ),
-        ],
-      ),
-      body: WillPopScope(
-        child: Stack(
-          children: <Widget>[
-            // List
-            Container(
-              child: StreamBuilder(
-                stream: Firestore.instance.collection('users').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(themeColor),
-                      ),
-                    );
-                  } else {
-                    return ListView.builder(
-                      padding: EdgeInsets.all(10.0),
-                      itemBuilder: (context, index) => buildItem(context, snapshot.data.documents[index]),
-                      itemCount: snapshot.data.documents.length,
-                    );
-                  }
-                },
-              ),
-            ),
-
-            // Loading
-            Positioned(
-              child: isLoading
-                  ? Container(
-                      child: Center(
-                        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(themeColor)),
-                      ),
-                      color: Colors.white.withOpacity(0.8),
-                    )
-                  : Container(),
-            )
-          ],
-        ),
-        onWillPop: onBackPress,
-      ),
-    );
   }
 
   Widget buildItem(BuildContext context, DocumentSnapshot document) {
@@ -364,6 +198,112 @@ class MainScreenState extends State<MainScreen> {
         margin: EdgeInsets.only(bottom: 10.0, left: 5.0, right: 5.0),
       );
     }
+  }
+
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+
+  void onItemMenuPress(Choice choice) {
+    if (choice.title == 'Log out') {
+      handleSignOut();
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => Settings()));
+    }
+  }
+
+  Future<Null> handleSignOut() async {
+    this.setState(() {
+      isLoading = true;
+    });
+
+    await FirebaseAuth.instance.signOut();
+    await googleSignIn.disconnect();
+    await googleSignIn.signOut();
+
+    this.setState(() {
+      isLoading = false;
+    });
+
+    Navigator.of(context)
+        .pushAndRemoveUntil(MaterialPageRoute(builder: (context) => MyApp()), (Route<dynamic> route) => false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'MAIN',
+          style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        actions: <Widget>[
+          PopupMenuButton<Choice>(
+            onSelected: onItemMenuPress,
+            itemBuilder: (BuildContext context) {
+              return choices.map((Choice choice) {
+                return PopupMenuItem<Choice>(
+                    value: choice,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(
+                          choice.icon,
+                          color: primaryColor,
+                        ),
+                        Container(
+                          width: 10.0,
+                        ),
+                        Text(
+                          choice.title,
+                          style: TextStyle(color: primaryColor),
+                        ),
+                      ],
+                    ));
+              }).toList();
+            },
+          ),
+        ],
+      ),
+      body: WillPopScope(
+        child: Stack(
+          children: <Widget>[
+            // List
+            Container(
+              child: StreamBuilder(
+                stream: Firestore.instance.collection('users').snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(themeColor),
+                      ),
+                    );
+                  } else {
+                    return ListView.builder(
+                      padding: EdgeInsets.all(10.0),
+                      itemBuilder: (context, index) => buildItem(context, snapshot.data.documents[index]),
+                      itemCount: snapshot.data.documents.length,
+                    );
+                  }
+                },
+              ),
+            ),
+
+            // Loading
+            Positioned(
+              child: isLoading
+                  ? Container(
+                      child: Center(
+                        child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(themeColor)),
+                      ),
+                      color: Colors.white.withOpacity(0.8),
+                    )
+                  : Container(),
+            )
+          ],
+        ),
+        onWillPop: onBackPress,
+      ),
+    );
   }
 }
 
