@@ -28,4 +28,4 @@ Deploy the app with the command "flutter run"
 ## The App
 * [Amazon App Store](https://www.amazon.com/dp/B07VBGRKFT/ref=apps_sf_sta?fbclid=IwAR0mId7zHk9Kv3o-i9ZpoPmygw2V4VM0a6-Dw1F1soTeJmi4ubNqnPlld4E) - Download the app from Amazon app store.
 * [Aptoide Store](https://com-dfa-flutterchatdemo.en.aptoide.com/) - Download the readymade app from the Aptoide appstore.
-
+* [Google Play Store](https://play.google.com/store/apps/details?id=com.anapeksha.strangr) - Download the app from the appstore!
